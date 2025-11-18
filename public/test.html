@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Liquidación Modal</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- No cargamos estilos globales: el Web Component inyecta su CSS dentro del Shadow DOM -->
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-single {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn-single:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+        
+        .btn-multiple {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-multiple:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+        
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info-box li {
+            color: #666;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🚀 Liquidación Dashboard</h1>
+        <p>Prueba el componente React integrado en modo modal</p>
+        
+        <div class="buttons">
+            <button class="btn btn-single" onclick="abrirSingle()">
+                <i class="fas fa-file-invoice"></i> 
+                Liquidación Individual
+            </button>
+            
+            <button class="btn btn-multiple" onclick="abrirMultiple()">
+                <i class="fas fa-boxes"></i> 
+                Liquidación Múltiple (7 guías)
+            </button>
+        </div>
+        
+        <div class="info-box">
+            <h3>💡 Características</h3>
+            <ul>
+                <li><strong>Modo Individual:</strong> Liquidación detallada de una guía con políticas</li>
+                <li><strong>Modo Múltiple:</strong> Tabla optimizada para revisar 20-30 guías</li>
+                <li><strong>CSS Moderno:</strong> Tailwind v4 compilado</li>
+                <li><strong>Bundle:</strong> 249 KB JS + 45 KB CSS (optimizado)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Web Component host -->
+    <liquidation-modal></liquidation-modal>
+
+    <!-- Script del componente (registra el custom element) -->
+    <script src="liquidation-bundle.js"></script>
+    
+    <script>
+        // NOTA: Pasando undefined permite que el componente use sus datos mock internos completos
+        // Esto asegura que todos los campos necesarios estén presentes
+        
+        function abrirSingle() {
+            window.LiquidationApp.open({
+                shipments: undefined, // Usa mockMultipleShipments[0] internamente
+                mode: 'single',
+                onSave: (data) => {
+                    console.log('💾 Guardar liquidación individual:', data);
+                    alert('✅ Liquidación guardada exitosamente!');
+                    window.LiquidationApp.close();
+                },
+                onCancel: () => {
+                    console.log('❌ Cancelar liquidación');
+                    window.LiquidationApp.close();
+                }
+            });
+        }
+        
+        function abrirMultiple() {
+            window.LiquidationApp.open({
+                shipments: undefined, // Usa mockMultipleShipments completo internamente
+                mode: 'multiple',
+                onSave: (data) => {
+                    console.log('💾 Guardar liquidación múltiple:', data);
+                    alert('✅ Liquidaciones guardadas exitosamente!');
+                    window.LiquidationApp.close();
+                },
+                onCancel: () => {
+                    console.log('❌ Cancelar liquidación múltiple');
+                    window.LiquidationApp.close();
+                }
+            });
+        }
+        
+        console.log('✅ LiquidationApp cargado:', window.LiquidationApp);
+    </script>
+</body>
+</html>

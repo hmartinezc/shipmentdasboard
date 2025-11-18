@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shipment Settlement Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2c3e50',
+            secondary: '#7e22ce',
+            accent: '#3b82f6',
+            success: '#10b981',
+            warning: '#f59e0b',
+            danger: '#ef4444',
+            light: '#f8f9fa',
+            dark: '#343a40',
+            gray: {
+              DEFAULT: '#6c757d',
+              light: '#f0f0f0'
+            },
+            'card-bg': '#ffffff',
+            'row-alt': '#f9fafb',
+          },
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+          },
+          boxShadow: {
+            'card': '0 2px 6px rgba(0,0,0,0.08)',
+            'card-hover': '0 4px 12px rgba(0,0,0,0.15)',
+          },
+          fontSize: {
+            'xxs': '0.7rem',
+          }
+        }
+      }
+    }
+  </script>
+  </head>
+<body class="bg-gray-light min-h-screen">
+  <div id="root"></div>
+  <script type="module" src="/src/index.tsx"></script>
+</body>
+</html>

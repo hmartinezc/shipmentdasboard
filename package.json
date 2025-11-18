@@ -1,0 +1,33 @@
+{
+  "name": "shipment-settlement-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:razor": "vite build --mode production",
+    "build:single": "vite build --mode production && node scripts/embed-css.js",
+    "build:razor:unmin": "set \"UNMINIFIED=true\"&& vite build --mode production",
+    "build:single:unmin": "set \"UNMINIFIED=true\"&& vite build --mode production && node scripts/embed-css.js",
+    "test:razor": "npm run build:single && start dist-razor\\test.html",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "preact": "^10.27.2",
+    "preact-custom-element": "^4.6.0"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.2",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^22.14.0",
+    "autoprefixer": "^10.4.22",
+    "postcss": "^8.5.6",
+    "postcss-prefix-selector": "^2.1.1",
+    "tailwindcss": "^4.1.17",
+    "terser": "^5.44.1",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0",
+    "vite-plugin-css-injected-by-js": "^3.5.2"
+  }
+}

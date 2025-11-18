@@ -1,0 +1,5 @@
+{
+  "name": "Shipment Settlement Dashboard",
+  "description": "An advanced dashboard to manage financial settlements for shipments. Allows for detailed tracking of charges, payments, deductions, and commissions to calculate profitability.",
+  "requestFramePermissions": []
+}

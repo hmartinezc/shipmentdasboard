@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Liquidación Modal</title>
+    
+    <!-- Font Awesome para paridad visual -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Estilos del componente React -->
+    <link rel="stylesheet" href="http://localhost:3000/src/index.css" />
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .demo-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-single {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+        }
+        
+        .btn-single:hover {
+            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+        }
+        
+        .btn-multiple {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-multiple:hover {
+            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
+        }
+        
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #e83e8c;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 4px;
+        }
+        
+        .info-box h3 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 16px;
+        }
+        
+        .info-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .info-box li {
+            color: #666;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🚀 Liquidación Dashboard</h1>
+        <p>Prueba el componente React integrado en modo modal</p>
+        
+        <div class="buttons">
+            <button class="btn btn-single" onclick="abrirSingle()">
+                <i class="fas fa-file-invoice"></i> 
+                Liquidación Individual
+            </button>
+            
+            <button class="btn btn-multiple" onclick="abrirMultiple()">
+                <i class="fas fa-boxes"></i> 
+                Liquidación Múltiple (7 guías)
+            </button>
+        </div>
+        
+        <div class="info-box">
+            <h3>💡 Características</h3>
+            <ul>
+                <li><strong>Modo Individual:</strong> Liquidación detallada de una guía con políticas</li>
+                <li><strong>Modo Múltiple:</strong> Tabla optimizada para revisar 20-30 guías</li>
+                <li><strong>CSS Aislado:</strong> Prefijo <code>lq-</code> evita conflictos</li>
+                <li><strong>Bundle:</strong> 577 KB JS + 10.8 KB CSS</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Script del componente React -->
+    <script type="module" src="http://localhost:3000/src/main-modal.tsx"></script>
+    
+    <script>
+        // Datos de ejemplo para una guía
+        const guiaSingle = {
+            awb: "230-6584-1226",
+            consignee: "ACME Corporation",
+            weight: 1250,
+            rule: "R-2024-0847",
+            utilidad: 450.00,
+            status: "valid",
+            cobros: 2500.00,
+            pagos: 2050.00,
+            carrier: "American Airlines",
+            season: "Alta",
+            salesRep: "Juan Pérez"
+        };
+        
+        // Datos de ejemplo para múltiples guías
+        const guiasMultiple = [
+            {
+                awb: "230-6584-1001",
+                consignee: "Tech Solutions Inc",
+                weight: 780,
+                rule: "R-2024-0847",
+                utilidad: 325.50,
+                status: "valid",
+                cobros: 1850.00,
+                pagos: 1524.50
+            },
+            {
+                awb: "230-6584-1002",
+                consignee: "Global Trade LLC",
+                weight: 1450,
+                rule: "R-2024-0921",
+                utilidad: -125.00,
+                status: "error",
+                cobros: 2100.00,
+                pagos: 2225.00
+            },
+            {
+                awb: "230-6584-1003",
+                consignee: "Import Export Co",
+                weight: 950,
+                rule: "R-2024-0847",
+                utilidad: 280.00,
+                status: "warning",
+                cobros: 1680.00,
+                pagos: 1400.00
+            },
+            {
+                awb: "230-6584-1004",
+                consignee: "Pacific Cargo",
+                weight: 1650,
+                rule: "R-2024-0921",
+                utilidad: 540.75,
+                status: "valid",
+                cobros: 2950.00,
+                pagos: 2409.25
+            },
+            {
+                awb: "230-6584-1005",
+                consignee: "Atlantic Shipping",
+                weight: 1120,
+                rule: "R-2024-0847",
+                utilidad: 395.00,
+                status: "valid",
+                cobros: 2200.00,
+                pagos: 1805.00
+            },
+            {
+                awb: "230-6584-1006",
+                consignee: "Nordic Logistics",
+                weight: 890,
+                rule: "R-2024-0921",
+                utilidad: 175.50,
+                status: "warning",
+                cobros: 1590.00,
+                pagos: 1414.50
+            },
+            {
+                awb: "230-6584-1007",
+                consignee: "Southern Express",
+                weight: 1340,
+                rule: "R-2024-0847",
+                utilidad: 485.25,
+                status: "valid",
+                cobros: 2580.00,
+                pagos: 2094.75
+            }
+        ];
+        
+        function abrirSingle() {
+            window.LiquidationApp.open({
+                shipments: [guiaSingle],
+                mode: 'single',
+                onSave: () => {
+                    console.log('💾 Guardar liquidación individual:', guiaSingle);
+                    alert('Liquidación guardada exitosamente!');
+                    window.LiquidationApp.close();
+                },
+                onCancel: () => {
+                    console.log('❌ Cancelar liquidación');
+                    window.LiquidationApp.close();
+                }
+            });
+        }
+        
+        function abrirMultiple() {
+            window.LiquidationApp.open({
+                shipments: guiasMultiple,
+                mode: 'multiple',
+                onSave: () => {
+                    console.log('💾 Guardar liquidación múltiple:', guiasMultiple);
+                    alert(`${guiasMultiple.length} liquidaciones guardadas exitosamente!`);
+                    window.LiquidationApp.close();
+                },
+                onCancel: () => {
+                    console.log('❌ Cancelar liquidación múltiple');
+                    window.LiquidationApp.close();
+                }
+            });
+        }
+        
+        console.log('✅ LiquidationApp cargado:', window.LiquidationApp);
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* ✅ OPTIMIZACIÓN: Agregar animación de spin para loaders */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Utilidades personalizadas equivalentes (compatibilidad con clases existentes) */
+.text-primary { color: #2c3e50; }
+.text-success { color: #10b981; }
+.text-warning { color: #f59e0b; }
+.text-danger { color: #ef4444; }
+.text-gray { color: #6c757d; }
+.bg-row-alt { background-color: #f9fafb; }
