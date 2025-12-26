@@ -6,7 +6,7 @@ import InfoGrid from './components/InfoGrid';
 import FinancialSummary from './components/FinancialSummary';
 import useFinancials from './hooks/useFinancials';
 import { mockPolicyRule, mockMultipleShipments } from './data/mockData';
-import type { ViewMode, ShipmentSummary, ExporterOption, RubroOption } from './types';
+import type { ViewMode, ShipmentSummary, ExporterOption, RubroOption, SavePayloadSingle } from './types';
 
 // ✅ OPTIMIZACIÓN: Lazy load de componentes pesados
 const FinancialDetails = lazy(() => import('./components/FinancialDetails'));
@@ -23,7 +23,7 @@ export interface AppProps {
         deductions: RubroOption[];
         commissions: RubroOption[];
     };
-    onSave?: () => void;
+    onSave?: (payload: any) => void;
     onCancel?: () => void;
     isModal?: boolean; // Si es true, no renderiza background ni padding exterior
 }
@@ -73,6 +73,36 @@ const App = ({
     }
 
     // Single Mode (1 shipment)
+    const handleSaveClickSingle = () => {
+        if (!onSave) return;
+        const payload: SavePayloadSingle = {
+            generalInfo: financials.generalInfo,
+            baseValues: financials.baseValues,
+            compraVentaItems: financials.compraVentaItems.map(item => {
+                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                const totalCompra = item.valorCompra * factor;
+                const totalVenta = item.valorVenta * factor;
+                return {
+                    ...item,
+                    totalCompra,
+                    totalVenta,
+                    utilidadItem: totalVenta - totalCompra
+                };
+            }),
+            deductionItems: financials.deductionItems.map(item => {
+                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                return { ...item, total: item.valor * factor };
+            }),
+            commissionItems: financials.commissionItems.map(item => {
+                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                return { ...item, total: item.valor * factor };
+            }),
+            totals: financials.totals,
+            policyRule: shipmentsData?.[0]?.policyRule  // Incluir regla de política para histórico
+        };
+        onSave(payload);
+    };
+
     if (!isMultipleMode) {
         return (
             <div className={isModal ? "text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
@@ -81,7 +111,7 @@ const App = ({
                         viewMode={viewMode} 
                         onViewModeChange={handleViewModeChange}
                         onCancel={onCancel}
-                        onSave={onSave}
+                        onSave={handleSaveClickSingle}
                     />
 
                     <div className="flex flex-col gap-1.5">
@@ -125,6 +155,59 @@ const App = ({
 
     // Multiple Mode (Multiple shipments)
     const effectiveShipments = shipmentsData ?? mockMultipleShipments;
+    const handleSaveClickMultiple = () => {
+        if (!onSave) return;
+        // Enriquecer cada shipment con cálculos por-item y totales
+        const enriched = effectiveShipments.map(s => {
+            const baseValues = {
+                fijo: 1,
+                peso_cobrable: Number(s.generalInfo.pesoCobrable) || 0,
+                gross_weight: Number(s.generalInfo.grossWeight) || 0,
+                piezas: Number(s.generalInfo.piezas) || 0,
+                volumen: Number(s.generalInfo.volumen) || 0,
+                freight_charge: Number(s.generalInfo.freightCharge) || 0,
+                due_agent: Number(s.generalInfo.dueAgent) || 0,
+                due_carrier: Number(s.generalInfo.dueCarrier) || 0,
+            } as const;
+
+            const compraVentaItems = s.compraVentaItems.map(item => {
+                const factor = baseValues[item.baseKey as keyof typeof baseValues] as number;
+                const totalCompra = item.valorCompra * factor;
+                const totalVenta = item.valorVenta * factor;
+                return { ...item, totalCompra, totalVenta, utilidadItem: totalVenta - totalCompra };
+            });
+            const deductionItems = s.deductionItems.map(item => ({
+                ...item,
+                total: item.valor * (baseValues[item.baseKey as keyof typeof baseValues] as number)
+            }));
+            const commissionItems = s.commissionItems.map(item => ({
+                ...item,
+                total: item.valor * (baseValues[item.baseKey as keyof typeof baseValues] as number)
+            }));
+
+            const totalCobros = compraVentaItems.reduce((a, it) => a + it.totalVenta, 0);
+            const totalPagos = compraVentaItems.reduce((a, it) => a + it.totalCompra, 0);
+            const totalDeducciones = deductionItems.reduce((a, it) => a + it.total, 0);
+            const totalComisiones = commissionItems.reduce((a, it) => a + it.total, 0);
+            const utilidad = totalCobros - totalPagos - totalDeducciones - totalComisiones;
+            const totalCostos = totalPagos + totalDeducciones + totalComisiones;
+            const utilidadPorc = totalCostos > 0 ? (utilidad / totalCostos) * 100 : (totalCobros > 0 ? 100 : 0);
+
+            const payload: SavePayloadSingle = {
+                generalInfo: s.generalInfo,
+                baseValues: baseValues as any,
+                compraVentaItems,
+                deductionItems: deductionItems as any,
+                commissionItems: commissionItems as any,
+                totals: { totalCobros, totalPagos, totalDeducciones, totalComisiones, utilidad, utilidadPorc },
+                policyRule: s.policyRule  // Incluir regla de política para histórico
+            };
+
+            return { awb: s.awb, payload };
+        });
+
+        onSave({ shipments: enriched });
+    };
     return (
         <div className={isModal ? "text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
             <main className="max-w-[1400px] mx-auto">
@@ -152,7 +235,7 @@ const App = ({
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={onSave}
+                                    onClick={handleSaveClickMultiple}
                                     className="bg-cyan-500 hover:bg-cyan-400 text-white border-none px-3 py-1.5 rounded-md cursor-pointer font-bold text-[10px] flex items-center gap-1.5 transition-all shadow-sm hover:shadow"
                                 >
                                     <Icon name="checkCircle" className="w-3 h-3" />

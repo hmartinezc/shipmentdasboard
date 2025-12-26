@@ -5,6 +5,8 @@ export interface RubroOption {
     value: string;
     text: string;
     type?: RubroType;
+    chargeId?: string;   // ID del rubro para persistencia en BD
+    iataCode?: string;   // Código IATA del rubro
 }
 
 export type CalculationBasis = 'fijo' | 'peso_cobrable' | 'gross_weight' | 'piezas' | 'volumen' | 'freight_charge' | 'due_agent' | 'due_carrier';
@@ -38,6 +40,8 @@ export interface CompraVentaItem {
     baseKey: CalculationBasis;
     valorCompra: number;
     valorVenta: number;
+    chargeId?: string;   // ID del rubro para persistencia en BD
+    iataCode?: string;   // Código IATA del rubro
 }
 
 export interface DeductionItem {
@@ -47,6 +51,8 @@ export interface DeductionItem {
     baseKey: CalculationBasis;
     valor: number;
     extraInfo: string;
+    chargeId?: string;   // ID del rubro para persistencia en BD
+    iataCode?: string;   // Código IATA del rubro
 }
 
 export interface CommissionItem {
@@ -56,6 +62,8 @@ export interface CommissionItem {
     baseKey: CalculationBasis;
     valor: number;
     extraInfo: string;
+    chargeId?: string;   // ID del rubro para persistencia en BD
+    iataCode?: string;   // Código IATA del rubro
 }
 
 export type FinancialItem = CompraVentaItem | DeductionItem | CommissionItem;
@@ -69,6 +77,35 @@ export interface Totals {
     totalComisiones: number;
     utilidad: number;
     utilidadPorc: number;
+}
+
+// Payload enriquecido para guardar en backend desde modo "single"
+export interface CompraVentaItemCalculated extends CompraVentaItem {
+    totalCompra: number;
+    totalVenta: number;
+    utilidadItem: number;
+}
+
+export interface DeductionOrCommissionCalculated {
+    id: string;
+    type: 'deductions' | 'commissions';
+    rubro: string;
+    baseKey: CalculationBasis;
+    valor: number;
+    extraInfo: string;
+    total: number;
+    chargeId?: string;   // ID del rubro para persistencia en BD
+    iataCode?: string;   // Código IATA del rubro
+}
+
+export interface SavePayloadSingle {
+    generalInfo: GeneralInfo;
+    baseValues: BaseValues;
+    compraVentaItems: CompraVentaItemCalculated[];
+    deductionItems: DeductionOrCommissionCalculated[];
+    commissionItems: DeductionOrCommissionCalculated[];
+    totals: Totals;
+    policyRule?: PolicyRule;  // Regla de política para histórico en BD
 }
 
 export type ViewMode = 'liquidacion' | 'politicas' | 'resumen' | 'detalle';

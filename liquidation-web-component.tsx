@@ -75,11 +75,10 @@ const LoadingFallback = () => (
 
 // Componente interno del modal
 const ModalContent = ({ config }: { config: LiquidationModalConfig }) => {
-    const handleSave = async () => {
+    const handleSave = async (payload: any) => {
         if (config.onSave) {
             try {
-                await config.onSave(config.shipments);
-                // Disparar evento personalizado para cerrar
+                await config.onSave(payload);
                 const closeEvent = new CustomEvent('liquidation-close', { bubbles: true, composed: true });
                 document.dispatchEvent(closeEvent);
             } catch (error) {

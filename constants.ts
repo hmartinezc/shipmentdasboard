@@ -29,25 +29,25 @@ export const EXPORTER_OPTIONS: ExporterOption[] = [
 
 export const RUBRO_OPTIONS: Record<string, RubroOption[]> = {
     compraVenta: [
-        { value: 'Air Freight', text: 'Air Freight', type: 'both' },
-        { value: 'Fuel Surcharge', text: 'Fuel Surcharge', type: 'both' },
-        { value: 'Handling', text: 'Handling', type: 'both' },
-        { value: 'Insurance', text: 'Insurance', type: 'both' },
-        { value: 'Security Fee', text: 'Security Fee (Carrier)', type: 'compra' },
-        { value: 'AWB Fee', text: 'AWB Fee', type: 'venta' },
-        { value: 'Screening', text: 'Screening', type: 'venta' },
-        { value: 'IT/Customs', text: 'IT / Customs', type: 'compra' },
+        { value: 'Air Freight', text: 'Air Freight', type: 'both', chargeId: 'CHG-001', iataCode: 'AF' },
+        { value: 'Fuel Surcharge', text: 'Fuel Surcharge', type: 'both', chargeId: 'CHG-002', iataCode: 'FS' },
+        { value: 'Handling', text: 'Handling', type: 'both', chargeId: 'CHG-003', iataCode: 'HD' },
+        { value: 'Insurance', text: 'Insurance', type: 'both', chargeId: 'CHG-004', iataCode: 'IN' },
+        { value: 'Security Fee', text: 'Security Fee (Carrier)', type: 'compra', chargeId: 'CHG-005', iataCode: 'SF' },
+        { value: 'AWB Fee', text: 'AWB Fee', type: 'venta', chargeId: 'CHG-006', iataCode: 'AW' },
+        { value: 'Screening', text: 'Screening', type: 'venta', chargeId: 'CHG-007', iataCode: 'SC' },
+        { value: 'IT/Customs', text: 'IT / Customs', type: 'compra', chargeId: 'CHG-008', iataCode: 'IT' },
     ],
     deductions: [
-        { value: 'Descuento por pronto pago', text: 'Descuento por pronto pago' },
-        { value: 'Nota de crédito aplicada', text: 'Nota de crédito aplicada' },
-        { value: 'Ajuste por peso', text: 'Ajuste por peso' },
-        { value: 'Reclamo por daño', text: 'Reclamo por daño' },
+        { value: 'Descuento por pronto pago', text: 'Descuento por pronto pago', chargeId: 'DED-001', iataCode: 'DPP' },
+        { value: 'Nota de crédito aplicada', text: 'Nota de crédito aplicada', chargeId: 'DED-002', iataCode: 'NCA' },
+        { value: 'Ajuste por peso', text: 'Ajuste por peso', chargeId: 'DED-003', iataCode: 'APE' },
+        { value: 'Reclamo por daño', text: 'Reclamo por daño', chargeId: 'DED-004', iataCode: 'RDA' },
     ],
     commissions: [
-        { value: 'Comisión Agente Origen', text: 'Comisión Agente Origen' },
-        { value: 'Comisión Agente Destino', text: 'Comisión Agente Destino' },
-        { value: 'Comisión Vendedor', text: 'Comisión Vendedor' },
+        { value: 'Comisión Agente Origen', text: 'Comisión Agente Origen', chargeId: 'COM-001', iataCode: 'CAO' },
+        { value: 'Comisión Agente Destino', text: 'Comisión Agente Destino', chargeId: 'COM-002', iataCode: 'CAD' },
+        { value: 'Comisión Vendedor', text: 'Comisión Vendedor', chargeId: 'COM-003', iataCode: 'CVE' },
     ]
 };
 

@@ -119,7 +119,9 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
                 rubroType: rubro!.type || 'both',
                 baseKey,
                 valorCompra,
-                valorVenta
+                valorVenta,
+                chargeId: rubro!.chargeId,
+                iataCode: rubro!.iataCode
             };
         } else {
              newItem = {
@@ -128,7 +130,9 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
                 rubro: rubro!.text,
                 baseKey,
                 valor,
-                extraInfo
+                extraInfo,
+                chargeId: rubro!.chargeId,
+                iataCode: rubro!.iataCode
             } as FinancialItem;
         }
         

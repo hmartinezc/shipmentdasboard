@@ -33,7 +33,9 @@ export const mockCompraVentaItems: CompraVentaItem[] = [
         rubroType: 'both',
         baseKey: 'peso_cobrable',
         valorCompra: 0.85,
-        valorVenta: 1.05
+        valorVenta: 1.05,
+        chargeId: 'CHG-001',
+        iataCode: 'AF'
     },
     {
         id: 'cv-demo-2',
@@ -43,7 +45,9 @@ export const mockCompraVentaItems: CompraVentaItem[] = [
         rubroType: 'both',
         baseKey: 'peso_cobrable',
         valorCompra: 0.15,
-        valorVenta: 0.20
+        valorVenta: 0.20,
+        chargeId: 'CHG-002',
+        iataCode: 'FS'
     },
     {
         id: 'cv-demo-3',
@@ -53,7 +57,9 @@ export const mockCompraVentaItems: CompraVentaItem[] = [
         rubroType: 'both',
         baseKey: 'fijo',
         valorCompra: 45.00,
-        valorVenta: 65.00
+        valorVenta: 65.00,
+        chargeId: 'CHG-003',
+        iataCode: 'HD'
     },
     {
         id: 'cv-demo-4',
@@ -63,7 +69,9 @@ export const mockCompraVentaItems: CompraVentaItem[] = [
         rubroType: 'compra',
         baseKey: 'fijo',
         valorCompra: 25.00,
-        valorVenta: 0
+        valorVenta: 0,
+        chargeId: 'CHG-005',
+        iataCode: 'SF'
     },
     {
         id: 'cv-demo-5',
@@ -73,7 +81,9 @@ export const mockCompraVentaItems: CompraVentaItem[] = [
         rubroType: 'venta',
         baseKey: 'fijo',
         valorCompra: 0,
-        valorVenta: 35.00
+        valorVenta: 35.00,
+        chargeId: 'CHG-007',
+        iataCode: 'SC'
     }
 ];
 
@@ -84,7 +94,9 @@ export const mockDeductionItems: DeductionItem[] = [
         rubro: 'Descuento por pronto pago',
         baseKey: 'fijo',
         valor: 50.00,
-        extraInfo: 'Pago dentro de 15 días'
+        extraInfo: 'Pago dentro de 15 días',
+        chargeId: 'DED-001',
+        iataCode: 'DPP'
     },
     {
         id: 'ded-demo-2',
@@ -92,7 +104,9 @@ export const mockDeductionItems: DeductionItem[] = [
         rubro: 'Ajuste por peso',
         baseKey: 'peso_cobrable',
         valor: 0.05,
-        extraInfo: 'Recalculo de peso volumétrico'
+        extraInfo: 'Recalculo de peso volumétrico',
+        chargeId: 'DED-003',
+        iataCode: 'APE'
     }
 ];
 
@@ -103,7 +117,9 @@ export const mockCommissionItems: CommissionItem[] = [
         rubro: 'Comisión Agente Origen',
         baseKey: 'fijo',
         valor: 75.00,
-        extraInfo: 'Agent GYE'
+        extraInfo: 'Agent GYE',
+        chargeId: 'COM-001',
+        iataCode: 'CAO'
     },
     {
         id: 'com-demo-2',
@@ -111,7 +127,9 @@ export const mockCommissionItems: CommissionItem[] = [
         rubro: 'Comisión Vendedor',
         baseKey: 'peso_cobrable',
         valor: 0.08,
-        extraInfo: 'Comisión sobre peso cobrable'
+        extraInfo: 'Comisión sobre peso cobrable',
+        chargeId: 'COM-003',
+        iataCode: 'CVE'
     }
 ];
 
