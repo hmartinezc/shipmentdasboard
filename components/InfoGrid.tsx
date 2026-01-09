@@ -45,6 +45,7 @@ const InfoGrid = ({ generalInfo, updateGeneralInfo, totals, exporterOptions }: I
                 <InfoItem label="Freight Charge" value={generalInfo.freightCharge} prefix="$" onUpdate={(val) => updateGeneralInfo('freightCharge', val)} isEditable />
                 <InfoItem label="Due Agent" value={generalInfo.dueAgent} prefix="$" onUpdate={(val) => updateGeneralInfo('dueAgent', val)} isEditable />
                 <InfoItem label="Due Carrier" value={generalInfo.dueCarrier} prefix="$" onUpdate={(val) => updateGeneralInfo('dueCarrier', val)} isEditable />
+                <InfoItem label="Total Hijas" value={generalInfo.totalHijas} onUpdate={(val) => updateGeneralInfo('totalHijas', val)} isEditable />
                 <InfoItem label="Total" value={currencyFormatter.format(totalGeneral)} highlight />
             </div>
         </Card>

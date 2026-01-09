@@ -103,7 +103,7 @@ const CustomSelect = <T extends GenericOption>({
                             placeholder="Buscar..."
                             className="w-full px-2 py-1 border border-slate-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(e) => setSearchTerm((e.currentTarget as HTMLInputElement).value)}
                             onMouseDown={(e) => e.stopPropagation()}
                             autoFocus
                         />

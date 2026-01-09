@@ -9,14 +9,14 @@ export interface RubroOption {
     iataCode?: string;   // Código IATA del rubro
 }
 
-export type CalculationBasis = 'fijo' | 'peso_cobrable' | 'gross_weight' | 'piezas' | 'volumen' | 'freight_charge' | 'due_agent' | 'due_carrier';
+export type CalculationBasis = 'fijo' | 'peso_cobrable' | 'gross_weight' | 'piezas' | 'volumen' | 'freight_charge' | 'due_agent' | 'due_carrier' | 'hijas';
 
 export interface ExporterOption {
     value: string;
     text: string;
 }
 
-export type GeneralInfoKey = 'fechaVuelo' | 'importadorAWB' | 'ruta' | 'piezas' | 'grossWeight' | 'volumen' | 'pesoCobrable' | 'tipoCorte' | 'tipoRate' | 'tarifaCompra' | 'tarifaVenta' | 'rangoPeso' | 'exporter' | 'freightCharge' | 'dueAgent' | 'dueCarrier';
+export type GeneralInfoKey = 'fechaVuelo' | 'importadorAWB' | 'ruta' | 'piezas' | 'grossWeight' | 'volumen' | 'pesoCobrable' | 'tipoCorte' | 'tipoRate' | 'tarifaCompra' | 'tarifaVenta' | 'rangoPeso' | 'exporter' | 'freightCharge' | 'dueAgent' | 'dueCarrier' | 'totalHijas';
 
 export type GeneralInfo = Record<GeneralInfoKey, string | number>;
 
@@ -29,6 +29,7 @@ export interface BaseValues {
     freight_charge: number;
     due_agent: number;
     due_carrier: number;
+    hijas: number;
 }
 
 export interface CompraVentaItem {

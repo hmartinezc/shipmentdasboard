@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:razor": "vite build --mode production",
+    "build:razor": "npm run build:single",
     "build:single": "vite build --mode production && node scripts/embed-css.js",
     "build:razor:unmin": "set \"UNMINIFIED=true\"&& vite build --mode production",
     "build:single:unmin": "set \"UNMINIFIED=true\"&& vite build --mode production && node scripts/embed-css.js",

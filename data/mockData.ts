@@ -21,7 +21,8 @@ export const mockGeneralInfo: GeneralInfo = {
     exporter: 'ODFISH',
     freightCharge: 285.50,
     dueAgent: 350.00,
-    dueCarrier: 28.00
+    dueCarrier: 28.00,
+    totalHijas: 5
 };
 
 export const mockCompraVentaItems: CompraVentaItem[] = [

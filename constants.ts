@@ -17,7 +17,8 @@ export const INITIAL_GENERAL_INFO: GeneralInfo = {
     exporter: 'ODFISH',
     freightCharge: 260.85,
     dueAgent: 330.00,
-    dueCarrier: 25.00
+    dueCarrier: 25.00,
+    totalHijas: 0
 };
 
 export const EXPORTER_OPTIONS: ExporterOption[] = [
@@ -59,7 +60,8 @@ export const CALCULATION_BASIS_OPTIONS: { value: string; label: string }[] = [
     { value: 'volumen', label: 'x Volumen' },
     { value: 'freight_charge', label: 'x Freight Charge' },
     { value: 'due_agent', label: 'x Due Agent' },
-    { value: 'due_carrier', label: 'x Due Carrier' }
+    { value: 'due_carrier', label: 'x Due Carrier' },
+    { value: 'hijas', label: 'x Total Hijas' }
 ];
 
 export const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });

@@ -1,3 +1,4 @@
+import { memo } from 'preact/compat';
 import Card from './Card';
 import Icon from './icons/Icon';
 import { currencyFormatter } from '../constants';
@@ -88,4 +89,12 @@ const ShipmentInlineDetails = ({ shipment, onViewFullDetails }: ShipmentInlineDe
     );
 };
 
-export default ShipmentInlineDetails;
+// ✅ OPTIMIZACIÓN: Memoizar para evitar re-renders cuando otras filas cambian
+export default memo(ShipmentInlineDetails, (prev, next) => {
+    return (
+        prev.shipment.id === next.shipment.id &&
+        prev.shipment.totalCobros === next.shipment.totalCobros &&
+        prev.shipment.totalPagos === next.shipment.totalPagos &&
+        prev.shipment.status === next.shipment.status
+    );
+});

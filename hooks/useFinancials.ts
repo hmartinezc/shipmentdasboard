@@ -17,17 +17,99 @@ type FinancialAction =
     | { type: 'ADD_ITEM'; item: FinancialItem }
     | { type: 'DELETE_ITEM'; id: string; itemType: TabType };
 
+// Función para normalizar nombre de rubro para matching (ignora mayúsculas, espacios extra, etc.)
+const normalizeRubroName = (name: string): string => {
+    return name.toLowerCase().trim().replace(/\s+/g, ' ');
+};
+
+// Genera una clave única para matching: nombre + baseKey (solo fusiona si ambos coinciden)
+const getMatchKey = (rubro: string, baseKey: string): string => {
+    return `${normalizeRubroName(rubro)}|${baseKey}`;
+};
+
+// Función para fusionar rubros duplicados en un array de CompraVentaItems
+// Solo fusiona si tienen el mismo nombre Y la misma base de cálculo
+// ✅ EXPORTADA para uso en modo múltiple
+export const mergeCompraVentaItems = (items: CompraVentaItem[]): CompraVentaItem[] => {
+    const merged: CompraVentaItem[] = [];
+    const rubroMap = new Map<string, number>(); // matchKey -> index en merged
+    
+    for (const item of items) {
+        const matchKey = getMatchKey(item.rubro, item.baseKey);
+        const existingIndex = rubroMap.get(matchKey);
+        
+        if (existingIndex !== undefined) {
+            // Match encontrado (mismo nombre + misma baseKey): fusionar valores
+            const existing = merged[existingIndex];
+            merged[existingIndex] = {
+                ...existing,
+                valorCompra: item.valorCompra > 0 ? item.valorCompra : existing.valorCompra,
+                valorVenta: item.valorVenta > 0 ? item.valorVenta : existing.valorVenta,
+                chargeId: item.chargeId || existing.chargeId,
+                iataCode: item.iataCode || existing.iataCode,
+            };
+        } else {
+            // Nuevo rubro o diferente baseKey
+            rubroMap.set(matchKey, merged.length);
+            merged.push({ ...item });
+        }
+    }
+    
+    return merged;
+};
+
 const financialReducer = (state: FinancialState, action: FinancialAction): FinancialState => {
+    console.log('🔄 financialReducer called:', action.type, action);
     switch (action.type) {
         case 'SET_ALL':
-            return action.payload;
+            // Aplicar matching automático al cargar datos
+            return {
+                ...action.payload,
+                compraVenta: mergeCompraVentaItems(action.payload.compraVenta)
+            };
         case 'ADD_ITEM':
             const { item } = action;
+            console.log('➕ ADD_ITEM:', item);
             if (item.type === 'compraVenta') {
-                return { ...state, compraVenta: [...state.compraVenta, item] };
+                const newItem = item as CompraVentaItem;
+                const newMatchKey = getMatchKey(newItem.rubro, newItem.baseKey);
+                console.log('🔍 Looking for match key:', newMatchKey);
+                
+                // Buscar si ya existe un rubro con el mismo nombre Y misma baseKey
+                const existingIndex = state.compraVenta.findIndex(
+                    existing => getMatchKey(existing.rubro, existing.baseKey) === newMatchKey
+                );
+                
+                console.log('🔍 Existing index:', existingIndex, 'Current items:', state.compraVenta.length);
+                
+                if (existingIndex !== -1) {
+                    // ✅ MATCH ENCONTRADO: Fusionar valores (mismo nombre + misma baseKey)
+                    console.log('🔄 MERGING with existing item');
+                    const existing = state.compraVenta[existingIndex];
+                    const mergedItem: CompraVentaItem = {
+                        ...existing,
+                        // Si el nuevo trae valorCompra > 0, usar el nuevo (actualiza)
+                        valorCompra: newItem.valorCompra > 0 ? newItem.valorCompra : existing.valorCompra,
+                        // Si el nuevo trae valorVenta > 0, usar el nuevo (actualiza)
+                        valorVenta: newItem.valorVenta > 0 ? newItem.valorVenta : existing.valorVenta,
+                        // Preservar chargeId e iataCode si existen
+                        chargeId: newItem.chargeId || existing.chargeId,
+                        iataCode: newItem.iataCode || existing.iataCode,
+                    };
+                    
+                    const updatedCompraVenta = [...state.compraVenta];
+                    updatedCompraVenta[existingIndex] = mergedItem;
+                    return { ...state, compraVenta: updatedCompraVenta };
+                }
+                
+                // No hay match (diferente nombre o diferente baseKey), agregar como nuevo
+                console.log('✅ ADDING as new item');
+                return { ...state, compraVenta: [...state.compraVenta, newItem] };
             } else if (item.type === 'deductions') {
+                console.log('✅ ADDING deduction');
                 return { ...state, deductions: [...state.deductions, item] };
             } else {
+                console.log('✅ ADDING commission');
                 return { ...state, commissions: [...state.commissions, item] };
             }
         case 'DELETE_ITEM':
@@ -123,8 +205,10 @@ const useFinancials = (initialData?: InitialFinancials) => {
     }, []);
 
     const addItem = useCallback(async (item: FinancialItem) => {
+        console.log('📥 addItem called in useFinancials:', item);
         // Primero agregar localmente para UI responsiva
         dispatch({ type: 'ADD_ITEM', item });
+        console.log('📤 dispatch sent');
         
         // Enviar al backend en background
         try {
@@ -158,27 +242,28 @@ const useFinancials = (initialData?: InitialFinancials) => {
         freight_charge: Number(generalInfo.freightCharge) || 0,
         due_agent: Number(generalInfo.dueAgent) || 0,
         due_carrier: Number(generalInfo.dueCarrier) || 0,
-    }), [generalInfo.pesoCobrable, generalInfo.grossWeight, generalInfo.piezas, generalInfo.volumen, generalInfo.freightCharge, generalInfo.dueAgent, generalInfo.dueCarrier]);
+        hijas: Number(generalInfo.totalHijas) || 0,
+    }), [generalInfo.pesoCobrable, generalInfo.grossWeight, generalInfo.piezas, generalInfo.volumen, generalInfo.freightCharge, generalInfo.dueAgent, generalInfo.dueCarrier, generalInfo.totalHijas]);
 
     // ✅ OPTIMIZACIÓN 4: Cálculos optimizados con reduce memoizado
     const totals = useMemo<Totals>(() => {
         const { compraVenta, deductions, commissions } = financialState;
-        const { fijo, peso_cobrable, gross_weight, piezas, volumen, freight_charge, due_agent, due_carrier } = baseValues;
+        const { fijo, peso_cobrable, gross_weight, piezas, volumen, freight_charge, due_agent, due_carrier, hijas } = baseValues;
         
         // Pre-calcular lookup table para mejor performance
-        const baseValuesLookup = { fijo, peso_cobrable, gross_weight, piezas, volumen, freight_charge, due_agent, due_carrier };
+        const baseValuesLookup: Record<string, number> = { fijo, peso_cobrable, gross_weight, piezas, volumen, freight_charge, due_agent, due_carrier, hijas };
         
         const totalCobros = compraVenta.reduce((acc, item) => 
-            acc + (item.valorVenta * baseValuesLookup[item.baseKey]), 0);
+            acc + (item.valorVenta * (baseValuesLookup[item.baseKey] ?? 0)), 0);
         
         const totalPagos = compraVenta.reduce((acc, item) => 
-            acc + (item.valorCompra * baseValuesLookup[item.baseKey]), 0);
+            acc + (item.valorCompra * (baseValuesLookup[item.baseKey] ?? 0)), 0);
         
         const totalDeducciones = deductions.reduce((acc, item) => 
-            acc + (item.valor * baseValuesLookup[item.baseKey]), 0);
+            acc + (item.valor * (baseValuesLookup[item.baseKey] ?? 0)), 0);
         
         const totalComisiones = commissions.reduce((acc, item) => 
-            acc + (item.valor * baseValuesLookup[item.baseKey]), 0);
+            acc + (item.valor * (baseValuesLookup[item.baseKey] ?? 0)), 0);
         
         const utilidad = totalCobros - totalPagos - totalDeducciones - totalComisiones;
         const totalCostos = totalPagos + totalDeducciones + totalComisiones;
@@ -186,6 +271,9 @@ const useFinancials = (initialData?: InitialFinancials) => {
         
         return { totalCobros, totalPagos, totalDeducciones, totalComisiones, utilidad, utilidadPorc };
     }, [financialState, baseValues]);
+
+    // Debug: log cuando cambia el estado
+    console.log('🔵 useFinancials render - compraVenta items:', financialState.compraVenta.length, financialState.compraVenta.map(i => i.rubro + '|' + i.baseKey));
 
     return {
         generalInfo,

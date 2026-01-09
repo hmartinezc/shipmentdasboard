@@ -20,7 +20,7 @@ const RulesSummary = ({ rule }: RulesSummaryProps) => {
           </span>
         </div>
       }
-      icon=""
+      icon="empty"
     >
       <div className="space-y-3">
         {/* Basic info grid */}

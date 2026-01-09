@@ -28,7 +28,7 @@ const InfoItem = ({
     onUpdate,
     className = '',
     highlight = false
-}) => {
+}: InfoItemProps) => {
     const [isEditing, setIsEditing] = useState(false);
     const [currentValue, setCurrentValue] = useState(String(value));
     const inputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +96,7 @@ const InfoItem = ({
                         ref={inputRef}
                         type="text"
                         value={currentValue}
-                        onChange={(e) => setCurrentValue(e.target.value)}
+                        onChange={(e) => setCurrentValue((e.currentTarget as HTMLInputElement).value)}
                         onBlur={handleBlur}
                         onKeyDown={handleKeyDown}
                         className="w-full border border-slate-300 rounded text-xs font-semibold text-primary px-1 py-0.5 bg-white focus:outline-none focus:ring-2 focus:ring-slate-500 font-mono"

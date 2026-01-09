@@ -1,17 +1,24 @@
 
-import { useState, useMemo, lazy, Suspense, useCallback } from 'preact/compat';
+import { useState, useMemo, lazy, Suspense, useCallback, useRef } from 'preact/compat';
 import Icon from './components/icons/Icon';
 import PageHeader from './components/PageHeader';
 import InfoGrid from './components/InfoGrid';
 import FinancialSummary from './components/FinancialSummary';
 import useFinancials from './hooks/useFinancials';
 import { mockPolicyRule, mockMultipleShipments } from './data/mockData';
-import type { ViewMode, ShipmentSummary, ExporterOption, RubroOption, SavePayloadSingle } from './types';
+import type { ViewMode, ShipmentSummary, ExporterOption, RubroOption, SavePayloadSingle, CompraVentaItem, DeductionItem, CommissionItem } from './types';
 
 // ✅ OPTIMIZACIÓN: Lazy load de componentes pesados
 const FinancialDetails = lazy(() => import('./components/FinancialDetails'));
 const RulesSummary = lazy(() => import('./components/RulesSummary'));
 const MultipleLiquidationSummary = lazy(() => import('./components/MultipleLiquidationSummary'));
+
+// Tipo para datos editados (debe coincidir con el del componente hijo)
+type EditableShipmentData = {
+    compraVentaItems: CompraVentaItem[];
+    deductionItems: DeductionItem[];
+    commissionItems: CommissionItem[];
+};
 
 // Props interface for modal integration
 export interface AppProps {
@@ -43,7 +50,7 @@ const App = ({
     onSave,
     onCancel,
     isModal = false
-}) => {
+}: AppProps) => {
     const initialShipment = mode === 'single' ? shipmentsData?.[0] : undefined;
     const financials = useFinancials(initialShipment ? {
         generalInfo: initialShipment.generalInfo,
@@ -53,12 +60,20 @@ const App = ({
         disableAutoLoad: true
     } : undefined);
     const [viewMode, setViewMode] = useState<ViewMode>(mode === 'single' ? 'liquidacion' : 'resumen');
+    
+    // ✅ Estado para almacenar ediciones de shipments en modo múltiple
+    const editedShipmentsRef = useRef<Record<string, EditableShipmentData>>({});
 
     const isMultipleMode = useMemo(() => mode === 'multiple', [mode]);
 
     // ✅ OPTIMIZACIÓN: useCallback para handlers
     const handleViewModeChange = useCallback((newMode: ViewMode) => {
         setViewMode(newMode);
+    }, []);
+
+    // ✅ Handler para recibir datos editados del MultipleLiquidationSummary
+    const handleShipmentsEdited = useCallback((editedData: Record<string, EditableShipmentData>) => {
+        editedShipmentsRef.current = editedData;
     }, []);
 
     if (financials.isLoading) {
@@ -79,7 +94,7 @@ const App = ({
             generalInfo: financials.generalInfo,
             baseValues: financials.baseValues,
             compraVentaItems: financials.compraVentaItems.map(item => {
-                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                const factor = (financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number) ?? 0;
                 const totalCompra = item.valorCompra * factor;
                 const totalVenta = item.valorVenta * factor;
                 return {
@@ -90,11 +105,11 @@ const App = ({
                 };
             }),
             deductionItems: financials.deductionItems.map(item => {
-                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                const factor = (financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number) ?? 0;
                 return { ...item, total: item.valor * factor };
             }),
             commissionItems: financials.commissionItems.map(item => {
-                const factor = financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number;
+                const factor = (financials.baseValues[item.baseKey as keyof typeof financials.baseValues] as number) ?? 0;
                 return { ...item, total: item.valor * factor };
             }),
             totals: financials.totals,
@@ -157,9 +172,9 @@ const App = ({
     const effectiveShipments = shipmentsData ?? mockMultipleShipments;
     const handleSaveClickMultiple = () => {
         if (!onSave) return;
-        // Enriquecer cada shipment con cálculos por-item y totales
+        // Enriquecer cada shipment con cálculos por-item y totales (usando datos editados si existen)
         const enriched = effectiveShipments.map(s => {
-            const baseValues = {
+            const baseValues: Record<string, number> = {
                 fijo: 1,
                 peso_cobrable: Number(s.generalInfo.pesoCobrable) || 0,
                 gross_weight: Number(s.generalInfo.grossWeight) || 0,
@@ -168,21 +183,28 @@ const App = ({
                 freight_charge: Number(s.generalInfo.freightCharge) || 0,
                 due_agent: Number(s.generalInfo.dueAgent) || 0,
                 due_carrier: Number(s.generalInfo.dueCarrier) || 0,
-            } as const;
+                hijas: Number(s.generalInfo.totalHijas) || 0,
+            };
 
-            const compraVentaItems = s.compraVentaItems.map(item => {
-                const factor = baseValues[item.baseKey as keyof typeof baseValues] as number;
+            // ✅ Usar datos editados si existen, sino usar los originales
+            const editedData = editedShipmentsRef.current[s.id];
+            const sourceCompraVenta = editedData?.compraVentaItems ?? s.compraVentaItems;
+            const sourceDeductions = editedData?.deductionItems ?? s.deductionItems;
+            const sourceCommissions = editedData?.commissionItems ?? s.commissionItems;
+
+            const compraVentaItems = sourceCompraVenta.map(item => {
+                const factor = (baseValues[item.baseKey] ?? 0);
                 const totalCompra = item.valorCompra * factor;
                 const totalVenta = item.valorVenta * factor;
                 return { ...item, totalCompra, totalVenta, utilidadItem: totalVenta - totalCompra };
             });
-            const deductionItems = s.deductionItems.map(item => ({
+            const deductionItems = sourceDeductions.map(item => ({
                 ...item,
-                total: item.valor * (baseValues[item.baseKey as keyof typeof baseValues] as number)
+                total: item.valor * (baseValues[item.baseKey] ?? 0)
             }));
-            const commissionItems = s.commissionItems.map(item => ({
+            const commissionItems = sourceCommissions.map(item => ({
                 ...item,
-                total: item.valor * (baseValues[item.baseKey as keyof typeof baseValues] as number)
+                total: item.valor * (baseValues[item.baseKey] ?? 0)
             }));
 
             const totalCobros = compraVentaItems.reduce((a, it) => a + it.totalVenta, 0);
@@ -250,6 +272,7 @@ const App = ({
                     <MultipleLiquidationSummary 
                         shipments={effectiveShipments} 
                         onViewModeChange={handleViewModeChange}
+                        onShipmentsEdited={handleShipmentsEdited}
                     />
                 </Suspense>
             </main>

@@ -74,6 +74,19 @@ const FinancialDetails = ({ items, actions, baseValues, rubroOptions }: Financia
     const compraTbodyRef = useRef<HTMLTableSectionElement>(null);
     const ventaTbodyRef = useRef<HTMLTableSectionElement>(null);
     
+    // Crear lookup explícito para evitar undefined
+    const baseValuesLookup: Record<string, number> = {
+        fijo: baseValues.fijo ?? 1,
+        peso_cobrable: baseValues.peso_cobrable ?? 0,
+        gross_weight: baseValues.gross_weight ?? 0,
+        piezas: baseValues.piezas ?? 0,
+        volumen: baseValues.volumen ?? 0,
+        freight_charge: baseValues.freight_charge ?? 0,
+        due_agent: baseValues.due_agent ?? 0,
+        due_carrier: baseValues.due_carrier ?? 0,
+        hijas: baseValues.hijas ?? 0,
+    };
+    
     useEffect(() => {
         if (activeTab !== 'compraVenta') return;
         
@@ -96,57 +109,57 @@ const FinancialDetails = ({ items, actions, baseValues, rubroOptions }: Financia
 
     const renderCompraVenta = () => (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            {/* Cobros Charges (antes Rubros Venta) - IZQUIERDA */}
             <div className="border border-slate-300 rounded-lg overflow-hidden bg-white flex flex-col h-full shadow-sm">
-                <h3 style={{ background: 'linear-gradient(to right, #fff1f2, #ffffff)', borderBottomColor: '#fecdd3' }} className="text-[11px] font-semibold p-1.5 text-danger border-b flex items-center gap-1">
-                    <Icon name="arrowTrendDown" className="w-3 h-3 text-danger" /> Rubros Compra (Pagos)
+                <h3 style={{ background: 'linear-gradient(to right, #d1fae5, #ffffff)', borderBottomColor: '#a7f3d0' }} className="text-[11px] font-semibold p-1.5 text-success border-b flex items-center gap-1">
+                    <Icon name="arrowTrendUp" className="w-3 h-3 text-success" /> Cobros Charges
                 </h3>
                 <table className="w-full border-collapse text-xs">
                     <thead>
-                        <tr style={{ background: 'linear-gradient(to right, #fff1f2, #ffe4e6)', borderBottomColor: '#fecdd3' }} className="border-b">
+                        <tr style={{ background: 'linear-gradient(to right, #d1fae5, #a7f3d0)', borderBottomColor: '#6ee7b7' }} className="border-b">
                             <th className="p-1.5 text-left font-semibold text-gray text-[9px] h-7 tracking-widest uppercase">Rubro</th>
-                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Valor</th>
-                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">V.Tot</th>
+                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Sell</th>
+                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">T. Sell</th>
                         </tr>
                     </thead>
-                    <tbody ref={compraTbodyRef}>
-                        {items.compraVenta.length === 0 ? <PlaceholderRow message="No hay rubros de compra." colSpan={3} /> : items.compraVenta.map(item => {
-                            const totalCompra = item.valorCompra * baseValues[item.baseKey];
+                    <tbody ref={ventaTbodyRef}>
+                        {items.compraVenta.length === 0 ? <PlaceholderRow message="No hay rubros de venta." colSpan={3} /> : items.compraVenta.map(item => {
+                            const totalVenta = item.valorVenta * (baseValuesLookup[item.baseKey] ?? 0);
                             return <tr key={item.id} data-id={item.id} style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} className="last:border-b-0 align-middle h-7">
                                 <td className="p-1.5 text-[11px] text-primary">{item.rubro}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorCompra)}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalCompra)}</td>
+                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorVenta)}</td>
+                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalVenta)}</td>
                             </tr>
                         })}
                     </tbody>
                 </table>
             </div>
+            {/* Pago Payables (antes Rubros Compra) - DERECHA - Sin columna Rubro, con Diferencia y Acciones */}
             <div className="border border-slate-300 rounded-lg overflow-hidden bg-white flex flex-col h-full shadow-sm">
-                      <h3 style={{ background: 'linear-gradient(to right, #d1fae5, #ffffff)', borderBottomColor: '#a7f3d0' }} className="text-[11px] font-semibold p-1.5 text-success border-b flex items-center gap-1">
-                          <Icon name="arrowTrendUp" className="w-3 h-3 text-success" /> Rubros Venta (Cobros)
+                <h3 style={{ background: 'linear-gradient(to right, #fff1f2, #ffffff)', borderBottomColor: '#fecdd3' }} className="text-[11px] font-semibold p-1.5 text-danger border-b flex items-center gap-1">
+                    <Icon name="arrowTrendDown" className="w-3 h-3 text-danger" /> Pago Payables
                 </h3>
                 <table className="w-full border-collapse text-xs">
-                     <thead>
-                        <tr style={{ background: 'linear-gradient(to right, #d1fae5, #a7f3d0)', borderBottomColor: '#6ee7b7' }} className="border-b">
-                            <th className="p-1.5 text-left font-semibold text-gray text-[9px] h-7 tracking-widest uppercase">Rubro</th>
-                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Valor</th>
-                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">V.Tot</th>
-                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Utilidad</th>
+                    <thead>
+                        <tr style={{ background: 'linear-gradient(to right, #fff1f2, #ffe4e6)', borderBottomColor: '#fecdd3' }} className="border-b">
+                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] h-7 tracking-widest uppercase">Payable</th>
+                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">T.Payable</th>
+                            <th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Difference</th>
                             <th className="p-1.5 text-center font-semibold text-gray text-[9px] tracking-widest uppercase">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody ref={ventaTbodyRef}>
-                         {items.compraVenta.length === 0 ? <PlaceholderRow message="No hay rubros de venta." colSpan={5} /> : items.compraVenta.map(item => {
-                            const totalCompra = item.valorCompra * baseValues[item.baseKey];
-                            const totalVenta = item.valorVenta * baseValues[item.baseKey];
-                            const utilidad = totalVenta - totalCompra;
+                    <tbody ref={compraTbodyRef}>
+                        {items.compraVenta.length === 0 ? <PlaceholderRow message="No hay rubros de compra." colSpan={4} /> : items.compraVenta.map(item => {
+                            const totalCompra = item.valorCompra * (baseValuesLookup[item.baseKey] ?? 0);
+                            const totalVenta = item.valorVenta * (baseValuesLookup[item.baseKey] ?? 0);
+                            const diferencia = totalVenta - totalCompra;
                             return <tr key={item.id} data-id={item.id} style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} className="last:border-b-0 align-middle h-7">
-                                <td className="p-1.5 text-[11px] text-primary">{item.rubro}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorVenta)}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalVenta)}</td>
-                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${utilidad >= 0 ? 'text-success' : 'text-danger'}`}>{currencyFormatter.format(utilidad)}</td>
+                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorCompra)}</td>
+                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalCompra)}</td>
+                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${diferencia >= 0 ? 'text-success' : 'text-danger'}`}>{currencyFormatter.format(diferencia)}</td>
                                 <td className="p-1.5 text-center"><button type="button" onClick={() => actions.deleteItem(item.id, 'compraVenta')} className="bg-transparent border border-slate-200 rounded w-5 h-5 flex items-center justify-center cursor-pointer text-[10px] text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 focus:outline-none focus:ring-1 focus:ring-red-400 mx-auto transition-all"><Icon name="trash" className="w-3 h-3" /></button></td>
                             </tr>
-                         })}
+                        })}
                     </tbody>
                 </table>
             </div>
@@ -164,7 +177,7 @@ const FinancialDetails = ({ items, actions, baseValues, rubroOptions }: Financia
                 <thead><tr className="bg-slate-50"><th className="p-1.5 text-left font-semibold text-gray text-[9px] h-7 tracking-widest uppercase">Rubro</th><th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Valor</th><th className="p-1.5 text-right font-semibold text-gray text-[9px] tracking-widest uppercase">Total</th><th className="p-1.5 text-left font-semibold text-gray text-[9px] tracking-widest uppercase">{type === 'deductions' ? 'Descripción' : 'Agente'}</th><th className="p-1.5 text-center font-semibold text-gray text-[9px] tracking-widest uppercase">Acciones</th></tr></thead>
                 <tbody>
                     {items[type].length === 0 ? <PlaceholderRow message={`No hay ${type} registradas.`} colSpan={5} /> : (items[type] as (DeductionItem | CommissionItem)[]).map(item => {
-                        const total = item.valor * baseValues[item.baseKey];
+                        const total = item.valor * (baseValuesLookup[item.baseKey] ?? 0);
                         return <tr key={item.id} data-id={item.id} style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} className="last:border-b-0 align-middle h-7">
                             <td className="p-1.5 text-[11px] text-primary">{item.rubro}</td>
                             <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${valueColor}`}>{currencyFormatter.format(item.valor)}</td>

@@ -77,9 +77,12 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
     }, [rubro, formType]);
     
     const handleSubmit = () => {
+        console.log('🔵 handleSubmit called', { rubro, baseKey, valorCompra, valorVenta, formType });
+        
         // Validación 1: Rubro es obligatorio
         const rubroValidation = validators.required(rubro, 'El campo Rubro');
         if (!rubroValidation.isValid) {
+            console.log('❌ Rubro validation failed');
             showValidationError(rubroValidation.error!);
             return;
         }
@@ -93,6 +96,7 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
                 validators.positiveNumber(valorCompra >= 0 ? valorCompra : -1, 'Valor de compra'),
                 validators.positiveNumber(valorVenta >= 0 ? valorVenta : -1, 'Valor de venta')
             ]);
+            console.log('🔵 compraVenta validation:', validationResult);
         } else {
             // Validación para deducciones y comisiones
             validationResult = validators.positiveNumber(valor, 'El valor');
@@ -103,11 +107,13 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
         }
 
         if (!validationResult.isValid) {
+            console.log('❌ Validation failed:', validationResult.error);
             showValidationError(validationResult.error!);
             return;
         }
 
         const id = `${formType}-${Date.now()}`;
+        console.log('✅ Validation passed, creating item with id:', id);
         let newItem: FinancialItem;
 
         if (formType === 'compraVenta') {
@@ -136,7 +142,9 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
             } as FinancialItem;
         }
         
+        console.log('🚀 Calling onAddItem with:', newItem);
         onAddItem(newItem);
+        console.log('✅ onAddItem called successfully');
         
         // Reset form
         setRubro(null);
@@ -147,7 +155,19 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
         setExtraInfo('');
     };
 
-    const baseValue = baseValues[baseKey];
+    // Crear lookup con todas las claves posibles para evitar undefined
+    const baseValuesLookup: Record<string, number> = {
+        fijo: baseValues.fijo ?? 1,
+        peso_cobrable: baseValues.peso_cobrable ?? 0,
+        gross_weight: baseValues.gross_weight ?? 0,
+        piezas: baseValues.piezas ?? 0,
+        volumen: baseValues.volumen ?? 0,
+        freight_charge: baseValues.freight_charge ?? 0,
+        due_agent: baseValues.due_agent ?? 0,
+        due_carrier: baseValues.due_carrier ?? 0,
+        hijas: baseValues.hijas ?? 0,
+    };
+    const baseValue = baseValuesLookup[baseKey] ?? 0;
     const totalCompra = valorCompra * baseValue;
     const totalVenta = valorVenta * baseValue;
     const totalSimple = valor * baseValue;
@@ -174,19 +194,19 @@ const AddItemForm = ({ formType, onAddItem, baseValues, rubroOptions }: AddItemF
             {formType === 'compraVenta' ? (
                 <>
                     <FormGroup label="Valor Compra">
-                        <input type="number" value={valorCompra} onChange={e => setValorCompra(parseFloat(e.target.value) || 0)} disabled={isCompraDisabled} className={inputClasses}/>
+                        <input type="number" value={valorCompra} onChange={(e) => setValorCompra(parseFloat((e.currentTarget as HTMLInputElement).value) || 0)} disabled={isCompraDisabled} className={inputClasses}/>
                     </FormGroup>
                     <FormGroup label="Valor Venta">
-                        <input type="number" value={valorVenta} onChange={e => setValorVenta(parseFloat(e.target.value) || 0)} disabled={isVentaDisabled} className={inputClasses}/>
+                        <input type="number" value={valorVenta} onChange={(e) => setValorVenta(parseFloat((e.currentTarget as HTMLInputElement).value) || 0)} disabled={isVentaDisabled} className={inputClasses}/>
                     </FormGroup>
                 </>
             ) : (
                 <>
                     <FormGroup label="Valor">
-                        <input type="number" value={valor} onChange={e => setValor(parseFloat(e.target.value) || 0)} className={inputClasses}/>
+                        <input type="number" value={valor} onChange={(e) => setValor(parseFloat((e.currentTarget as HTMLInputElement).value) || 0)} className={inputClasses}/>
                     </FormGroup>
                     <FormGroup label={formType === 'deductions' ? 'Descripción' : 'Agente'}>
-                        <input type="text" value={extraInfo} onChange={e => setExtraInfo(e.target.value)} className={inputClasses} placeholder="Info adicional..."/>
+                        <input type="text" value={extraInfo} onChange={(e) => setExtraInfo((e.currentTarget as HTMLInputElement).value)} className={inputClasses} placeholder="Info adicional..."/>
                     </FormGroup>
                 </>
             )}

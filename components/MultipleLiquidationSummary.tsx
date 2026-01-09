@@ -1,33 +1,224 @@
 
-import { useState, useMemo, useCallback, Fragment } from 'preact/compat';
+import { useState, useMemo, useCallback, Fragment, useEffect, memo } from 'preact/compat';
 import Icon from './icons/Icon';
 import Card from './Card';
 import ConsolidatedTotals from './ConsolidatedTotals';
-import ShipmentTableRow from './ShipmentTableRow';
+import ShipmentTableRowBase from './ShipmentTableRow';
 import ShipmentInlineDetails from './ShipmentInlineDetails';
 import InfoGrid from './InfoGrid';
 import FinancialSummary from './FinancialSummary';
 import FinancialDetails from './FinancialDetails';
 import RulesSummary from './RulesSummary';
-import type { ShipmentSummary, ConsolidatedTotals as ConsolidatedTotalsType, ViewMode } from '../types';
+import { mergeCompraVentaItems } from '../hooks/useFinancials';
+import type { ShipmentSummary, ConsolidatedTotals as ConsolidatedTotalsType, ViewMode, FinancialItem, TabType, CompraVentaItem, DeductionItem, CommissionItem, BaseValues } from '../types';
+
+// ✅ OPTIMIZACIÓN: Memoizar ShipmentTableRow para evitar re-renders de 30 filas
+const ShipmentTableRow = memo(ShipmentTableRowBase, (prev, next) => {
+    return (
+        prev.shipment.id === next.shipment.id &&
+        prev.shipment.utilidad === next.shipment.utilidad &&
+        prev.shipment.status === next.shipment.status &&
+        prev.index === next.index &&
+        prev.isExpanded === next.isExpanded
+    );
+});
+
+// ✅ OPTIMIZACIÓN: Función pura para calcular baseValues (reutilizable)
+const calculateBaseValues = (generalInfo: ShipmentSummary['generalInfo']): BaseValues => ({
+    fijo: 1,
+    peso_cobrable: Number(generalInfo.pesoCobrable) || 0,
+    gross_weight: Number(generalInfo.grossWeight) || 0,
+    piezas: Number(generalInfo.piezas) || 0,
+    volumen: Number(generalInfo.volumen) || 0,
+    freight_charge: Number(generalInfo.freightCharge) || 0,
+    due_agent: Number(generalInfo.dueAgent) || 0,
+    due_carrier: Number(generalInfo.dueCarrier) || 0,
+    hijas: Number(generalInfo.totalHijas) || 0
+});
+
+// ✅ OPTIMIZACIÓN: Función pura para calcular utilidad de un shipment
+const calculateShipmentUtilidad = (
+    items: EditableShipmentData,
+    baseValues: BaseValues
+): number => {
+    const cobros = items.compraVentaItems.reduce((sum, item) => sum + (item.valorVenta * ((baseValues as any)[item.baseKey] ?? 0)), 0);
+    const pagos = items.compraVentaItems.reduce((sum, item) => sum + (item.valorCompra * ((baseValues as any)[item.baseKey] ?? 0)), 0);
+    const deducciones = items.deductionItems.reduce((sum, item) => sum + (item.valor * ((baseValues as any)[item.baseKey] ?? 0)), 0);
+    const comisiones = items.commissionItems.reduce((sum, item) => sum + (item.valor * ((baseValues as any)[item.baseKey] ?? 0)), 0);
+    return cobros - pagos - deducciones - comisiones;
+};
 
 interface MultipleLiquidationSummaryProps {
     shipments: ShipmentSummary[];
     onViewModeChange?: (mode: ViewMode) => void;
+    onShipmentsEdited?: (editedData: Record<string, EditableShipmentData>) => void;
 }
 
-const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiquidationSummaryProps) => {
+// Tipo para el estado editable de cada shipment
+export type EditableShipmentData = {
+    compraVentaItems: CompraVentaItem[];
+    deductionItems: DeductionItem[];
+    commissionItems: CommissionItem[];
+};
+
+const MultipleLiquidationSummary = ({ shipments, onViewModeChange, onShipmentsEdited }: MultipleLiquidationSummaryProps) => {
     const [selectedShipmentId, setSelectedShipmentId] = useState<string | null>(null);
     const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
     const [detailViewMode, setDetailViewMode] = useState<'liquidacion' | 'politicas'>('liquidacion');
+    
+    // ✅ Estado editable para los items de cada shipment (key = shipment.id)
+    const [editedShipments, setEditedShipments] = useState<Record<string, EditableShipmentData>>({});
 
-    // ✅ OPTIMIZACIÓN: Calcular totales consolidados solo cuando cambia shipments
+    // ✅ Notificar al padre cuando cambien los datos editados
+    useEffect(() => {
+        if (onShipmentsEdited) {
+            onShipmentsEdited(editedShipments);
+        }
+    }, [editedShipments, onShipmentsEdited]);
+
+    // ✅ Función para obtener los items actuales de un shipment (editados o originales)
+    const getShipmentItems = useCallback((shipment: ShipmentSummary): EditableShipmentData => {
+        if (editedShipments[shipment.id]) {
+            return editedShipments[shipment.id];
+        }
+        return {
+            compraVentaItems: mergeCompraVentaItems(shipment.compraVentaItems),
+            deductionItems: shipment.deductionItems,
+            commissionItems: shipment.commissionItems
+        };
+    }, [editedShipments]);
+
+    // ✅ Función para añadir un item a un shipment específico
+    const handleAddItem = useCallback((shipmentId: string, item: FinancialItem) => {
+        console.log('📥 handleAddItem called:', shipmentId, item);
+        setEditedShipments(prev => {
+            const shipment = shipments.find(s => s.id === shipmentId);
+            if (!shipment) return prev;
+            
+            const currentData = prev[shipmentId] || {
+                compraVentaItems: mergeCompraVentaItems(shipment.compraVentaItems),
+                deductionItems: [...shipment.deductionItems],
+                commissionItems: [...shipment.commissionItems]
+            };
+            
+            if (item.type === 'compraVenta') {
+                const newItem = item as CompraVentaItem;
+                // Verificar si ya existe para fusionar
+                const existingIndex = currentData.compraVentaItems.findIndex(
+                    existing => existing.rubro.toLowerCase() === newItem.rubro.toLowerCase() && 
+                               existing.baseKey === newItem.baseKey
+                );
+                
+                if (existingIndex !== -1) {
+                    // Fusionar con existente
+                    const existing = currentData.compraVentaItems[existingIndex];
+                    const mergedItem: CompraVentaItem = {
+                        ...existing,
+                        valorCompra: newItem.valorCompra > 0 ? newItem.valorCompra : existing.valorCompra,
+                        valorVenta: newItem.valorVenta > 0 ? newItem.valorVenta : existing.valorVenta,
+                        chargeId: newItem.chargeId || existing.chargeId,
+                        iataCode: newItem.iataCode || existing.iataCode,
+                    };
+                    const updatedItems = [...currentData.compraVentaItems];
+                    updatedItems[existingIndex] = mergedItem;
+                    return {
+                        ...prev,
+                        [shipmentId]: { ...currentData, compraVentaItems: updatedItems }
+                    };
+                }
+                
+                // Añadir como nuevo
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        compraVentaItems: [...currentData.compraVentaItems, newItem]
+                    }
+                };
+            } else if (item.type === 'deductions') {
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        deductionItems: [...currentData.deductionItems, item as DeductionItem]
+                    }
+                };
+            } else {
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        commissionItems: [...currentData.commissionItems, item as CommissionItem]
+                    }
+                };
+            }
+        });
+    }, [shipments]);
+
+    // ✅ Función para eliminar un item de un shipment específico
+    const handleDeleteItem = useCallback((shipmentId: string, itemId: string, type: TabType) => {
+        console.log('🗑️ handleDeleteItem called:', shipmentId, itemId, type);
+        setEditedShipments(prev => {
+            const shipment = shipments.find(s => s.id === shipmentId);
+            if (!shipment) return prev;
+            
+            const currentData = prev[shipmentId] || {
+                compraVentaItems: mergeCompraVentaItems(shipment.compraVentaItems),
+                deductionItems: [...shipment.deductionItems],
+                commissionItems: [...shipment.commissionItems]
+            };
+            
+            if (type === 'compraVenta') {
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        compraVentaItems: currentData.compraVentaItems.filter(i => i.id !== itemId)
+                    }
+                };
+            } else if (type === 'deductions') {
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        deductionItems: currentData.deductionItems.filter(i => i.id !== itemId)
+                    }
+                };
+            } else {
+                return {
+                    ...prev,
+                    [shipmentId]: {
+                        ...currentData,
+                        commissionItems: currentData.commissionItems.filter(i => i.id !== itemId)
+                    }
+                };
+            }
+        });
+    }, [shipments]);
+
+    // ✅ OPTIMIZACIÓN: Calcular totales consolidados incluyendo ediciones
     const consolidatedTotals = useMemo<ConsolidatedTotalsType>(() => {
         const totals = shipments.reduce((acc, ship) => {
             acc.totalShipments++;
-            acc.totalCobros += ship.totalCobros;
-            acc.totalPagos += ship.totalPagos;
-            acc.totalUtilidad += ship.utilidad;
+            
+            // Obtener items actuales (editados o originales)
+            const currentItems = editedShipments[ship.id] || {
+                compraVentaItems: ship.compraVentaItems,
+                deductionItems: ship.deductionItems,
+                commissionItems: ship.commissionItems
+            };
+            
+            // Usar función pura reutilizable
+            const baseValues = calculateBaseValues(ship.generalInfo);
+            const shipUtilidad = calculateShipmentUtilidad(currentItems, baseValues);
+            
+            // Calcular cobros/pagos para totales consolidados
+            const shipCobros = currentItems.compraVentaItems.reduce((sum, item) => sum + (item.valorVenta * (baseValues[item.baseKey] ?? 0)), 0);
+            const shipPagos = currentItems.compraVentaItems.reduce((sum, item) => sum + (item.valorCompra * (baseValues[item.baseKey] ?? 0)), 0);
+            
+            acc.totalCobros += shipCobros;
+            acc.totalPagos += shipPagos;
+            acc.totalUtilidad += shipUtilidad;
             
             // Conteo por status optimizado
             if (ship.status === 'valid') acc.validCount++;
@@ -52,7 +243,7 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiq
             : 0;
         
         return totals;
-    }, [shipments]);
+    }, [shipments, editedShipments]);
 
     // ✅ OPTIMIZACIÓN: Usar useMemo para shipment seleccionado
     const selectedShipment = useMemo(() => 
@@ -93,26 +284,28 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiq
     // Detail View (Individual Shipment)
     if (selectedShipment) {
         const currentIndex = shipments.findIndex(s => s.id === selectedShipmentId);
-        const baseValues = {
-            fijo: 1,
-            peso_cobrable: selectedShipment.generalInfo.pesoCobrable as number,
-            gross_weight: selectedShipment.generalInfo.grossWeight as number,
-            piezas: selectedShipment.generalInfo.piezas as number
-        };
+        const baseValues = calculateBaseValues(selectedShipment.generalInfo);
 
+        // ✅ Obtener items editados (o originales si no hay ediciones)
+        const currentItems = getShipmentItems(selectedShipment);
+
+        // ✅ Recalcular totales basados en los items actuales (editados o no)
         const totals = {
-            totalCobros: selectedShipment.totalCobros,
-            totalPagos: selectedShipment.totalPagos,
-            totalDeducciones: selectedShipment.deductionItems.reduce((sum, item) => sum + (item.valor * baseValues[item.baseKey]), 0),
-            totalComisiones: selectedShipment.commissionItems.reduce((sum, item) => sum + (item.valor * baseValues[item.baseKey]), 0),
-            utilidad: selectedShipment.utilidad,
-            utilidadPorc: selectedShipment.utilidadPorc
+            totalCobros: currentItems.compraVentaItems.reduce((sum, item) => sum + (item.valorVenta * (baseValues[item.baseKey] ?? 0)), 0),
+            totalPagos: currentItems.compraVentaItems.reduce((sum, item) => sum + (item.valorCompra * (baseValues[item.baseKey] ?? 0)), 0),
+            totalDeducciones: currentItems.deductionItems.reduce((sum, item) => sum + (item.valor * (baseValues[item.baseKey] ?? 0)), 0),
+            totalComisiones: currentItems.commissionItems.reduce((sum, item) => sum + (item.valor * (baseValues[item.baseKey] ?? 0)), 0),
+            utilidad: 0,
+            utilidadPorc: 0
         };
+        totals.utilidad = totals.totalCobros - totals.totalPagos - totals.totalDeducciones - totals.totalComisiones;
+        const totalCostos = totals.totalPagos + totals.totalDeducciones + totals.totalComisiones;
+        totals.utilidadPorc = totalCostos > 0 ? (totals.utilidad / totalCostos) * 100 : (totals.totalCobros > 0 ? 100 : 0);
 
         return (
             <div className="space-y-1.5">
                 {/* Navigation Bar */}
-                <Card title="" icon="">
+                <Card title="" icon="empty">
                     <div style={{ background: 'linear-gradient(to right, #eff6ff, #eef2ff)', borderColor: '#bfdbfe' }} className="flex items-center justify-between p-2 rounded-lg border">
                         <button
                             type="button"
@@ -194,13 +387,13 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiq
                                 <FinancialSummary totals={totals} />
                                 <FinancialDetails
                                     items={{
-                                        compraVenta: selectedShipment.compraVentaItems,
-                                        deductions: selectedShipment.deductionItems,
-                                        commissions: selectedShipment.commissionItems
+                                        compraVenta: currentItems.compraVentaItems,
+                                        deductions: currentItems.deductionItems,
+                                        commissions: currentItems.commissionItems
                                     }}
                                     actions={{
-                                        addItem: () => {},
-                                        deleteItem: () => {}
+                                        addItem: (item: FinancialItem) => handleAddItem(selectedShipment.id, item),
+                                        deleteItem: (id: string, type: TabType) => handleDeleteItem(selectedShipment.id, id, type)
                                     }}
                                     baseValues={baseValues}
                                 />
@@ -213,6 +406,23 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiq
             </div>
         );
     }
+
+    // ✅ OPTIMIZACIÓN: Memoizar shipments enriquecidos con utilidades calculadas
+    // Esto evita recalcular en cada render del map
+    const enrichedShipments = useMemo(() => {
+        return shipments.map(shipment => {
+            // Solo recalcular si hay ediciones para este shipment
+            if (!editedShipments[shipment.id]) {
+                return shipment; // Sin cambios, retornar original
+            }
+            
+            const currentItems = editedShipments[shipment.id];
+            const baseValues = calculateBaseValues(shipment.generalInfo);
+            const utilidad = calculateShipmentUtilidad(currentItems, baseValues);
+            
+            return { ...shipment, utilidad };
+        });
+    }, [shipments, editedShipments]);
 
     // Summary View (Multiple Shipments Table)
     return (
@@ -234,7 +444,8 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange }: MultipleLiq
                             </tr>
                         </thead>
                         <tbody>
-                            {shipments.map((shipment, index) => (
+                            {/* ✅ OPTIMIZACIÓN: Usar enrichedShipments ya memoizado */}
+                            {enrichedShipments.map((shipment, index) => (
                                 <Fragment key={shipment.id}>
                                     <ShipmentTableRow
                                         shipment={shipment}

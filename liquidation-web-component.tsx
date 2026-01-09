@@ -315,11 +315,11 @@ if (isDev) {
     console.log('🚀 Modo desarrollo: Modal API disponible en window.LiquidationApp');
     console.log('Ejemplo: window.LiquidationApp.open({ shipments: [...], mode: "multiple" })');
     
-    // Auto-abrir en dev para testing
+    // Auto-abrir en dev para testing - MODO SINGLE para probar agregar items
     setTimeout(() => {
         window.LiquidationApp.open({
-            shipments: mockMultipleShipments,
-            mode: 'multiple',
+            shipments: [mockMultipleShipments[0]], // Solo el primer shipment
+            mode: 'single',  // Modo single para permitir edición
             onSave: async (data) => {
                 console.log('💾 Guardar datos:', data);
                 await new Promise(resolve => setTimeout(resolve, 1000));
