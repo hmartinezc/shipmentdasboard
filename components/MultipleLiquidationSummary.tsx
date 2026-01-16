@@ -399,7 +399,10 @@ const MultipleLiquidationSummary = ({ shipments, onViewModeChange, onShipmentsEd
                                 />
                             </>
                         ) : (
-                            <RulesSummary rule={selectedShipment.policyRule} />
+                            <RulesSummary 
+                                rule={selectedShipment.policyRule} 
+                                compraVentaItems={currentItems.compraVentaItems}
+                            />
                         )}
                     </div>
                 </div>

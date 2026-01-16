@@ -18,7 +18,7 @@ const InfoGrid = ({ generalInfo, updateGeneralInfo, totals, exporterOptions }: I
     const exporterText = effectiveExporterOptions.find(opt => opt.value === generalInfo.exporter)?.text || '';
 
     return (
-        <Card title="Información General" icon="infoCircle">
+        <Card title="Información del Corte" icon="infoCircle">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
                 <InfoItem label="Fecha de Vuelo" value={generalInfo.fechaVuelo as string} />
                 <InfoItem label="Importador/AWB" value={generalInfo.importadorAWB as string} highlight />

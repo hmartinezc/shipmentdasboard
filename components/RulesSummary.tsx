@@ -1,12 +1,91 @@
+import { useMemo } from 'preact/compat';
 import Card from './Card';
 import Icon from './icons/Icon';
-import type { PolicyRule } from '../types';
+import type { PolicyRule, CompraVentaItem } from '../types';
 
 interface RulesSummaryProps {
   rule: PolicyRule;
+  compraVentaItems?: CompraVentaItem[];  // Items procesados con matching para detectar conflictos
 }
 
-const RulesSummary = ({ rule }: RulesSummaryProps) => {
+// Función para normalizar nombres (igual que en useFinancials)
+const normalizeRubroName = (name: string): string => {
+    return name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[^a-z0-9\s]/g, '');
+};
+
+const RulesSummary = ({ rule, compraVentaItems = [] }: RulesSummaryProps) => {
+  // Crear un mapa de conflictos desde compraVentaItems
+  const conflictMap = useMemo(() => {
+    const map = new Map<string, { hasConflict: boolean; reason?: string }>();
+    for (const item of compraVentaItems) {
+      const key = normalizeRubroName(item.rubro);
+      if (item.hasConflict) {
+        map.set(key, { hasConflict: true, reason: item.conflictReason });
+      }
+    }
+    return map;
+  }, [compraVentaItems]);
+
+  // ✅ Fusionar items de política con el mismo nombre en una sola fila
+  // Ejemplo: FUEL SURCHARGE (charge: 0.15, payable: 0) + FUEL SURCHARGE (charge: 0, payable: 0.15)
+  //       → FUEL SURCHARGE (charge: 0.15, payable: 0.15)
+  const processedItems = useMemo(() => {
+    const merged: Array<{
+      name: string;
+      charge: number | string;
+      payable: number | string;
+      diff: number | string;
+      hasConflict?: boolean;
+      conflictReason?: string;
+    }> = [];
+    const nameMap = new Map<string, number>(); // nombreNormalizado -> index en merged
+
+    for (const item of rule.items) {
+      const key = normalizeRubroName(item.name);
+      const existingIndex = nameMap.get(key);
+      
+      if (existingIndex !== undefined) {
+        // Ya existe un item con el mismo nombre → FUSIONAR
+        const existing = merged[existingIndex];
+        const existingCharge = typeof existing.charge === 'number' ? existing.charge : parseFloat(existing.charge as string) || 0;
+        const existingPayable = typeof existing.payable === 'number' ? existing.payable : parseFloat(existing.payable as string) || 0;
+        const itemCharge = typeof item.charge === 'number' ? item.charge : parseFloat(item.charge as string) || 0;
+        const itemPayable = typeof item.payable === 'number' ? item.payable : parseFloat(item.payable as string) || 0;
+        
+        const newCharge = existingCharge > 0 ? existingCharge : itemCharge;
+        const newPayable = existingPayable > 0 ? existingPayable : itemPayable;
+        const newDiff = newCharge - newPayable;
+        
+        merged[existingIndex] = {
+          ...existing,
+          charge: newCharge,
+          payable: newPayable,
+          diff: newDiff,
+        };
+      } else {
+        // Nuevo item
+        const conflict = conflictMap.get(key);
+        const itemCharge = typeof item.charge === 'number' ? item.charge : parseFloat(item.charge as string) || 0;
+        const itemPayable = typeof item.payable === 'number' ? item.payable : parseFloat(item.payable as string) || 0;
+        
+        nameMap.set(key, merged.length);
+        merged.push({
+          name: item.name,
+          charge: itemCharge,
+          payable: itemPayable,
+          diff: itemCharge - itemPayable,
+          hasConflict: conflict?.hasConflict || false,
+          conflictReason: conflict?.reason
+        });
+      }
+    }
+    
+    return merged;
+  }, [rule.items, conflictMap]);
   return (
     <Card
       title={
@@ -125,20 +204,48 @@ const RulesSummary = ({ rule }: RulesSummaryProps) => {
                 </tr>
               </thead>
               <tbody>
-                {rule.items.map((it, idx) => (
-                  <tr key={idx} style={{ borderBottomColor: '#f3f4f6' }} className="border-b">
-                    <td className="p-2 text-[11px] text-gray-700">{it.name}</td>
-                    <td className="p-2 text-right font-mono text-[11px] text-blue-900">{it.charge}</td>
-                    <td className="p-2 text-right font-mono text-[11px] text-blue-900">{it.payable}</td>
-                    <td className={`p-2 text-right font-mono font-semibold text-[11px] ${Number(it.diff) >= 0 ? 'text-success' : 'text-red-600'}`}>{it.diff}</td>
-                  </tr>
-                ))}
-                <tr style={{ background: 'linear-gradient(to right, #eff6ff, #dbeafe)' }}>
-                  <td className="p-2 text-[11px] font-bold text-blue-900">TOTAL</td>
-                  <td className="p-2 text-right font-mono font-bold text-[11px] text-blue-900">{rule.total.charge}</td>
-                  <td className="p-2 text-right font-mono font-bold text-[11px] text-blue-900">{rule.total.payable}</td>
-                  <td className={`p-2 text-right font-mono font-bold text-[11px] ${rule.total.diff >= 0 ? 'text-success' : 'text-red-600'}`}>{rule.total.diff}</td>
-                </tr>
+                {processedItems.map((it, idx) => {
+                  const isConflict = it.hasConflict === true;
+                  return (
+                    <tr 
+                      key={idx} 
+                      style={{ borderBottomColor: '#f3f4f6' }} 
+                      className={`border-b ${isConflict ? 'bg-amber-50 border-l-4 border-l-amber-400' : ''}`}
+                      title={isConflict ? it.conflictReason : undefined}
+                    >
+                      <td className="p-2 text-[11px] text-gray-700">
+                        <div className="flex items-center gap-1.5">
+                          {isConflict && (
+                            <span 
+                              className="inline-flex items-center justify-center w-4 h-4 bg-amber-400 text-white rounded-full text-[9px] font-bold cursor-help"
+                              title={it.conflictReason || 'Conflicto: mismo rubro con diferente base de cálculo'}
+                            >
+                              !
+                            </span>
+                          )}
+                          <span className={isConflict ? 'text-amber-800 font-medium' : ''}>{it.name}</span>
+                        </div>
+                      </td>
+                      <td className={`p-2 text-right font-mono text-[11px] ${isConflict ? 'text-amber-800' : 'text-blue-900'}`}>{typeof it.charge === 'number' ? it.charge.toFixed(2) : it.charge}</td>
+                      <td className={`p-2 text-right font-mono text-[11px] ${isConflict ? 'text-amber-800' : 'text-blue-900'}`}>{typeof it.payable === 'number' ? it.payable.toFixed(2) : it.payable}</td>
+                      <td className={`p-2 text-right font-mono font-semibold text-[11px] ${Number(it.diff) >= 0 ? 'text-success' : 'text-red-600'}`}>{typeof it.diff === 'number' ? it.diff.toFixed(2) : it.diff}</td>
+                    </tr>
+                  );
+                })}
+                {(() => {
+                  // Calcular totales desde los items fusionados
+                  const totalCharge = processedItems.reduce((sum, it) => sum + (typeof it.charge === 'number' ? it.charge : 0), 0);
+                  const totalPayable = processedItems.reduce((sum, it) => sum + (typeof it.payable === 'number' ? it.payable : 0), 0);
+                  const totalDiff = totalCharge - totalPayable;
+                  return (
+                    <tr style={{ background: 'linear-gradient(to right, #eff6ff, #dbeafe)' }}>
+                      <td className="p-2 text-[11px] font-bold text-blue-900">TOTAL</td>
+                      <td className="p-2 text-right font-mono font-bold text-[11px] text-blue-900">{totalCharge.toFixed(2)}</td>
+                      <td className="p-2 text-right font-mono font-bold text-[11px] text-blue-900">{totalPayable.toFixed(2)}</td>
+                      <td className={`p-2 text-right font-mono font-bold text-[11px] ${totalDiff >= 0 ? 'text-success' : 'text-red-600'}`}>{totalDiff.toFixed(2)}</td>
+                    </tr>
+                  );
+                })()}
               </tbody>
             </table>
           </div>

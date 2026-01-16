@@ -43,6 +43,8 @@ export interface CompraVentaItem {
     valorVenta: number;
     chargeId?: string;   // ID del rubro para persistencia en BD
     iataCode?: string;   // Código IATA del rubro
+    hasConflict?: boolean;  // ⚠️ true si mismo rubro tiene diferente baseKey (requiere revisión)
+    conflictReason?: string; // Razón del conflicto para tooltip
 }
 
 export interface DeductionItem {
@@ -116,6 +118,8 @@ export interface PolicyItem {
     charge: number | string;
     payable: number | string;
     diff: number | string;
+    hasConflict?: boolean;  // ⚠️ true si mismo rubro tiene diferente baseKey en liquidación
+    conflictReason?: string; // Razón del conflicto para tooltip
 }
 
 export interface PolicyRule {

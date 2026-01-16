@@ -120,7 +120,7 @@ const App = ({
 
     if (!isMultipleMode) {
         return (
-            <div className={isModal ? "text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
+            <div className={isModal ? "text-gray-800 font-[-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_Roboto,_'Helvetica_Neue',_Arial,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-[-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_Roboto,_'Helvetica_Neue',_Arial,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
                 <main className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-[32%_1fr] gap-1.5">
                     <PageHeader 
                         viewMode={viewMode} 
@@ -158,7 +158,10 @@ const App = ({
                                     />
                                 </>
                             ) : (
-                                <RulesSummary rule={shipmentsData?.[0]?.policyRule || mockPolicyRule} />
+                                <RulesSummary 
+                                    rule={shipmentsData?.[0]?.policyRule || mockPolicyRule} 
+                                    compraVentaItems={financials.compraVentaItems}
+                                />
                             )}
                         </Suspense>
                     </div>
@@ -231,7 +234,7 @@ const App = ({
         onSave({ shipments: enriched });
     };
     return (
-        <div className={isModal ? "text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-['Inter',_'Segoe_UI',_system-ui,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
+        <div className={isModal ? "text-gray-800 font-[-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_Roboto,_'Helvetica_Neue',_Arial,_sans-serif] text-[11px]" : "bg-gradient-to-br from-slate-50 to-slate-100 text-gray-800 font-[-apple-system,_BlinkMacSystemFont,_'Segoe_UI',_Roboto,_'Helvetica_Neue',_Arial,_sans-serif] text-[11px] p-1.5 min-h-screen"}>
             <main className="max-w-[1400px] mx-auto">
                 <div className="mb-1.5">
                     <header className="flex flex-col sm:flex-row justify-between items-center px-2.5 py-1.5 bg-[#7034d5] rounded-lg shadow-lg text-white">

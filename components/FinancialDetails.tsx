@@ -125,10 +125,29 @@ const FinancialDetails = ({ items, actions, baseValues, rubroOptions }: Financia
                     <tbody ref={ventaTbodyRef}>
                         {items.compraVenta.length === 0 ? <PlaceholderRow message="No hay rubros de venta." colSpan={3} /> : items.compraVenta.map(item => {
                             const totalVenta = item.valorVenta * (baseValuesLookup[item.baseKey] ?? 0);
-                            return <tr key={item.id} data-id={item.id} style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} className="last:border-b-0 align-middle h-7">
-                                <td className="p-1.5 text-[11px] text-primary">{item.rubro}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorVenta)}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalVenta)}</td>
+                            const isConflict = item.hasConflict === true;
+                            return <tr 
+                                key={item.id} 
+                                data-id={item.id} 
+                                style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} 
+                                className={`last:border-b-0 align-middle h-7 ${isConflict ? 'bg-amber-50 border-l-4 border-l-amber-400' : ''}`}
+                                title={isConflict ? item.conflictReason : undefined}
+                            >
+                                <td className="p-1.5 text-[11px] text-primary">
+                                    <div className="flex items-center gap-1.5">
+                                        {isConflict && (
+                                            <span 
+                                                className="inline-flex items-center justify-center w-4 h-4 bg-amber-400 text-white rounded-full text-[9px] font-bold cursor-help"
+                                                title={item.conflictReason || 'Conflicto: mismo rubro con diferente base de cálculo'}
+                                            >
+                                                !
+                                            </span>
+                                        )}
+                                        <span className={isConflict ? 'text-amber-800 font-medium' : ''}>{item.rubro}</span>
+                                    </div>
+                                </td>
+                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${isConflict ? 'text-amber-800' : 'text-gray-800'}`}>{currencyFormatter.format(item.valorVenta)}</td>
+                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${isConflict ? 'text-amber-800' : 'text-gray-800'}`}>{currencyFormatter.format(totalVenta)}</td>
                             </tr>
                         })}
                     </tbody>
@@ -153,9 +172,16 @@ const FinancialDetails = ({ items, actions, baseValues, rubroOptions }: Financia
                             const totalCompra = item.valorCompra * (baseValuesLookup[item.baseKey] ?? 0);
                             const totalVenta = item.valorVenta * (baseValuesLookup[item.baseKey] ?? 0);
                             const diferencia = totalVenta - totalCompra;
-                            return <tr key={item.id} data-id={item.id} style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} className="last:border-b-0 align-middle h-7">
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(item.valorCompra)}</td>
-                                <td className="p-1.5 text-right font-mono font-semibold text-[11px] text-gray-800">{currencyFormatter.format(totalCompra)}</td>
+                            const isConflict = item.hasConflict === true;
+                            return <tr 
+                                key={item.id} 
+                                data-id={item.id} 
+                                style={{ borderBottomWidth: '1px', borderBottomColor: '#f3f4f6' }} 
+                                className={`last:border-b-0 align-middle h-7 ${isConflict ? 'bg-amber-50 border-l-4 border-l-amber-400' : ''}`}
+                                title={isConflict ? item.conflictReason : undefined}
+                            >
+                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${isConflict ? 'text-amber-800' : 'text-gray-800'}`}>{currencyFormatter.format(item.valorCompra)}</td>
+                                <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${isConflict ? 'text-amber-800' : 'text-gray-800'}`}>{currencyFormatter.format(totalCompra)}</td>
                                 <td className={`p-1.5 text-right font-mono font-semibold text-[11px] ${diferencia >= 0 ? 'text-success' : 'text-danger'}`}>{currencyFormatter.format(diferencia)}</td>
                                 <td className="p-1.5 text-center"><button type="button" onClick={() => actions.deleteItem(item.id, 'compraVenta')} className="bg-transparent border border-slate-200 rounded w-5 h-5 flex items-center justify-center cursor-pointer text-[10px] text-slate-400 hover:text-red-500 hover:border-red-300 hover:bg-red-50 focus:outline-none focus:ring-1 focus:ring-red-400 mx-auto transition-all"><Icon name="trash" className="w-3 h-3" /></button></td>
                             </tr>
